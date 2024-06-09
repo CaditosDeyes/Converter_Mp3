@@ -64,6 +64,7 @@ def download_and_convert():
             
             update_status(f"{title} - {artist}: Descargado")
             progress_var.set(0)  # Reinicia la barra de progreso
+            update_treeview(new_audio_filename, "Descargado")  # Actualiza la Treeview
             messagebox.showinfo("Información", "Descarga y conversión completadas correctamente")
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error: {e}")
@@ -73,6 +74,14 @@ def download_and_convert():
 def update_status(message):
     label_status.config(text=message)
     root.update_idletasks()  # Asegura que la GUI se actualice inmediatamente
+
+def update_treeview(filename, status):
+    file_name = os.path.basename(filename)  # Obtener solo el nombre del archivo
+    treeview.insert("", "end", values=(file_name, status))  # Insertar una nueva fila en la Treeview
+    treeview.column("Name", width=400, anchor="center") # Configurar el ancho de la columna "Name" y centrar el texto
+    treeview.column("Status", width=150, anchor="center") # Configurar el ancho de la columna "Status" y centrar el texto
+    treeview.heading("Name", text="Nombre", anchor="center") # Centrar el texto en la columna "Name"
+    treeview.heading("Status", text="Estado", anchor="center") # Centrar el texto en la columna "Status"
 
 # Crear ventana principal
 root = tk.Tk()
@@ -104,6 +113,12 @@ style = ttk.Style()
 style.configure("TProgressbar", thickness=30)  # Cambiar grosor de la barra de progreso
 progress_bar = ttk.Progressbar(root, variable=progress_var, maximum=100, length=500, style="TProgressbar")
 progress_bar.pack(pady=20, padx=20)
+
+# Crear Treeview para mostrar los archivos descargados
+treeview = ttk.Treeview(root, columns=("Name", "Status"), height=10, show="headings")
+treeview.heading("Name", text="Nombre")
+treeview.heading("Status", text="Estado")
+treeview.pack(pady=20)
 
 # Ejecutar el bucle principal de la ventana
 root.mainloop()

@@ -5,17 +5,37 @@ from moviepy.editor import VideoFileClip
 from mutagen.id3 import ID3, TIT2, TPE1
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import ttk
 
 def download_and_convert():
     video_url = entry_url.get()
     output_path = r"D:\Programas_Carlos\Converter_Mp3\Descargas"
     
+    def on_progress(stream, chunk, bytes_remaining):
+        total_size = stream.filesize
+        bytes_downloaded = total_size - bytes_remaining
+        percentage = (bytes_downloaded / total_size) * 100
+        progress_var.set(percentage)
+        root.update_idletasks()  # Asegura que la GUI se actualice inmediatamente
+    
+    def convert_audio(video_path, audio_path):
+        video = VideoFileClip(video_path)
+        total_frames = video.reader.nframes
+        for i, frame in enumerate(video.iter_frames()):
+            percentage = (i / total_frames) * 100
+            progress_var.set(percentage)
+            root.update_idletasks()  # Asegura que la GUI se actualice inmediatamente
+        audio = video.audio
+        audio.write_audiofile(audio_path)
+        video.close()
+        audio.close()
+
     def download_thread():
         try:
             if not os.path.exists(output_path):
                 os.makedirs(output_path)
             
-            yt = YouTube(video_url)
+            yt = YouTube(video_url, on_progress_callback=on_progress)
             stream = yt.streams.filter(file_extension='mp4').first()
             if not stream:
                 raise Exception("No hay streams disponibles para este video.")
@@ -28,12 +48,9 @@ def download_and_convert():
             filepath = os.path.join(output_path, "video.mp4")
             stream.download(output_path=output_path, filename="video.mp4")
             
-            video = VideoFileClip(filepath)
-            audio = video.audio
             audio_filename = os.path.join(output_path, "audio.mp3")
-            audio.write_audiofile(audio_filename)
-            video.close()
-            audio.close()
+            update_status(f"{title} - {artist}: Convirtiendo...")
+            convert_audio(filepath, audio_filename)
             
             audio_file = ID3(audio_filename)
             audio_file.add(TIT2(encoding=3, text=title))
@@ -46,6 +63,7 @@ def download_and_convert():
             os.remove(filepath)
             
             update_status(f"{title} - {artist}: Descargado")
+            progress_var.set(0)  # Reinicia la barra de progreso
             messagebox.showinfo("Información", "Descarga y conversión completadas correctamente")
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error: {e}")
@@ -79,6 +97,13 @@ button_download.pack(pady=20)
 # Crear Label para mostrar el estado de las descargas
 label_status = tk.Label(root, text="", font=("Arial", 16), bg="#BEC8C9")
 label_status.pack(pady=20)
+
+# Crear Progressbar para mostrar el progreso de la descarga
+progress_var = tk.DoubleVar()
+style = ttk.Style()
+style.configure("TProgressbar", thickness=30)  # Cambiar grosor de la barra de progreso
+progress_bar = ttk.Progressbar(root, variable=progress_var, maximum=100, length=500, style="TProgressbar")
+progress_bar.pack(pady=20, padx=20)
 
 # Ejecutar el bucle principal de la ventana
 root.mainloop()

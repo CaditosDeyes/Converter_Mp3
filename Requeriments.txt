@@ -1,3 +1,4 @@
 pip install pytube
 pip install moviepy
 pip install mutagen
+pip install yt-dlp
